@@ -1,0 +1,4 @@
+.vscode
+docs/out
+config.json
+__pycache__
