@@ -14,8 +14,8 @@ Fields:
 - ``id``: ``int``
 - ``turn_number``: ``int`` (note that this is updated once every turn, rather than just once every round - for each turn one user takes, the turn number will be two higher)
 - ``has_away_joined``: ``bool``
-- ``turn_started_at``: ``datetime``, the time the current turn started (see below)
-- ``started_at``: ``datetime``, the time the first move started (see below)
+- ``turn_started_at``: ``datetime`` or ``null``, the time the current turn started (see below)
+- ``started_at``: ``datetime`` or ``null``, the time the first move started (see below)
 - ``has_ended``: ``bool``
 - ``home``: ``TimerSide`` (see below)
 - ``away``: ``TimerSide`` (see below) or ``null``
