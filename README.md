@@ -1,5 +1,11 @@
 # Blitztime API Server
 
+Blitztime is an online game timer for Polytopia.
+
+It is very similar to, and probably usable as a replacement for, a chess timer.
+
+This is an implementation of the Blitztime API server in Python, using Peewee as an ORM for PostgreSQL, Sanic as an HTTP server and python-socketio for Socket.IO sockets (a layer on top of WebSockets, also providing alternative transports).
+
 ## Setup
 
 1. [Install Python 3.9+ (3.x where x >= 9).](https://www.python.org/downloads/)
