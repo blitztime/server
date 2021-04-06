@@ -20,6 +20,7 @@ Fields:
 - ``home``: ``TimerSide`` (see below)
 - ``away``: ``TimerSide`` (see below) or ``null``
 - ``settings``: ``array`` of ``StageSettings`` (see below)
+- ``observers``: ``int``
 
 ``TimerSide``
 =============
