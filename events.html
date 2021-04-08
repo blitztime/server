@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Socket.IO Events &mdash; Blitztime API Server 0.1.0 documentation</title>
+  <title>Socket.IO Events &mdash; Blitztime API Server 0.2.0 documentation</title>
   
 
   
@@ -91,6 +91,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#start-timer"><code class="docutils literal notranslate"><span class="pre">start_timer</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#end-turn"><code class="docutils literal notranslate"><span class="pre">end_turn</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#opponent-timed-out"><code class="docutils literal notranslate"><span class="pre">opponent_timed_out</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#add-time"><code class="docutils literal notranslate"><span class="pre">add_time</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#server-sent-events">Server-sent events</a><ul>
@@ -181,11 +182,15 @@
 </div>
 <div class="section" id="end-turn">
 <h3><code class="docutils literal notranslate"><span class="pre">end_turn</span></code><a class="headerlink" href="#end-turn" title="Permalink to this headline">¶</a></h3>
-<p>End the turn of the connected client. This may only be sent when it is the client’s turn. No data should be included.</p>
+<p>End the turn of the connected client. This may only be sent when it is the client’s turn. No data should be included. This can only be sent using a player token.</p>
 </div>
 <div class="section" id="opponent-timed-out">
 <h3><code class="docutils literal notranslate"><span class="pre">opponent_timed_out</span></code><a class="headerlink" href="#opponent-timed-out" title="Permalink to this headline">¶</a></h3>
-<p>Should be sent by one client when that client’s opponent has timed out. This will instruct the server to re-check the game, and end the game if necessary. If a client notices that it itself has timed out, it should instead use <code class="docutils literal notranslate"><span class="pre">end_turn</span></code>. No data should be included.</p>
+<p>Should be sent by one client when that client’s opponent has timed out. This will instruct the server to re-check the game, and end the game if necessary. If a client notices that it itself has timed out, it should instead use <code class="docutils literal notranslate"><span class="pre">end_turn</span></code>. No data should be included. This can only be sent using a player token.</p>
+</div>
+<div class="section" id="add-time">
+<h3><code class="docutils literal notranslate"><span class="pre">add_time</span></code><a class="headerlink" href="#add-time" title="Permalink to this headline">¶</a></h3>
+<p>Add time to both the home and away timers. Time should be given in seconds as the event data, an integer. This can only be sent using a manager token.</p>
 </div>
 </div>
 <div class="section" id="server-sent-events">

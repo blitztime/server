@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>HTTP Endpoints &mdash; Blitztime API Server 0.1.0 documentation</title>
+  <title>HTTP Endpoints &mdash; Blitztime API Server 0.2.0 documentation</title>
   
 
   
@@ -87,7 +87,7 @@
               <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">HTTP Endpoints</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#get-timer-timer-id"><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/timer/{timer_id}</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#post-timer-timer-id-away"><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/timer/{timer_id}/away</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#post-timer-timer-id-side"><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/timer/{timer_id}/{side}</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#post-timer"><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/timer</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#get-stats"><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/stats</span></code></a></li>
 </ul>
@@ -169,7 +169,7 @@
 <p>Get information on a timer.</p>
 <p>Parameters:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">timer_id</span></code> The ID of a timer, <code class="docutils literal notranslate"><span class="pre">int</span></code> in path.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timer_id</span></code>: The ID of a timer, <code class="docutils literal notranslate"><span class="pre">int</span></code> in path.</p></li>
 </ul>
 <p>Returns:</p>
 <ul class="simple">
@@ -177,38 +177,41 @@
 </ul>
 <p>Raises: <code class="docutils literal notranslate"><span class="pre">422</span></code> (bad timer ID), <code class="docutils literal notranslate"><span class="pre">404</span></code> (timer not found) or <code class="docutils literal notranslate"><span class="pre">500</span></code> (server error).</p>
 </div>
-<div class="section" id="post-timer-timer-id-away">
-<h2><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/timer/{timer_id}/away</span></code><a class="headerlink" href="#post-timer-timer-id-away" title="Permalink to this headline">¶</a></h2>
-<p>Join the away side of a timer.</p>
-<p>Parameters:</p>
+<div class="section" id="post-timer-timer-id-side">
+<h2><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/timer/{timer_id}/{side}</span></code><a class="headerlink" href="#post-timer-timer-id-side" title="Permalink to this headline">¶</a></h2>
+<p>Join the home or away side of a timer.</p>
+<p>Parameters (path):</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">timer_id</span></code> The ID of a timer, <code class="docutils literal notranslate"><span class="pre">int</span></code> in path</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timer_id</span></code>: The ID of a timer, <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">side</span></code>: Either <code class="docutils literal notranslate"><span class="pre">0</span></code> (home) or <code class="docutils literal notranslate"><span class="pre">1</span></code> (away).</p></li>
 </ul>
 <p>Returns (JSON body):</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">token</span></code> A string, the token to use to connect.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">timer</span></code> An int, the ID of the new timer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">token</span></code>: A string, the token to use to connect.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timer</span></code>: An int, the ID of the new timer.</p></li>
 </ul>
 <p>Raises: <code class="docutils literal notranslate"><span class="pre">422</span></code> (bad timer ID), <code class="docutils literal notranslate"><span class="pre">404</span></code> (timer not found), <code class="docutils literal notranslate"><span class="pre">409</span></code> (timer already has away) or <code class="docutils literal notranslate"><span class="pre">500</span></code> (server error).</p>
 </div>
 <div class="section" id="post-timer">
 <h2><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/timer</span></code><a class="headerlink" href="#post-timer" title="Permalink to this headline">¶</a></h2>
 <p>Create a new timer.</p>
-<p>Parameters:</p>
+<p>Parameters (JSON body):</p>
 <ul class="simple">
-<li><p>an array of <code class="docutils literal notranslate"><span class="pre">StageSettings</span></code> objects in a JSON body.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stages</span></code>: an array of <code class="docutils literal notranslate"><span class="pre">StageSettings</span></code> objects.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">as_manager</span></code>: optional <code class="docutils literal notranslate"><span class="pre">boolean</span></code>, default false.</p></li>
 </ul>
 <p>Returns (JSON body):</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">token</span></code> A string, the token to use to connect.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">timer</span></code> An int, the ID of the new timer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">token</span></code>: A string, the token to use to connect.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timer</span></code>: An int, the ID of the new timer.</p></li>
 </ul>
 <p>Raises: <code class="docutils literal notranslate"><span class="pre">422</span></code> (bad settings) or <code class="docutils literal notranslate"><span class="pre">500</span></code> (server error).</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">as_manager</span></code> is <code class="docutils literal notranslate"><span class="pre">false</span></code>, you will be added to the game as the host, and the token returned will be a player token. Otherwise, no host will be added and the token returned will be a manager token.</p>
 </div>
 <div class="section" id="get-stats">
 <h2><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/stats</span></code><a class="headerlink" href="#get-stats" title="Permalink to this headline">¶</a></h2>
 <p>Get stats relating to the app.</p>
-<p>Returns:</p>
+<p>Returns (JSON body):</p>
 <ul class="simple">
 <li><p>an <code class="docutils literal notranslate"><span class="pre">AppStats</span></code> object.</p></li>
 </ul>
