@@ -223,18 +223,6 @@ python-versions = "*"
 pycodestyle = "*"
 
 [[package]]
-name = "flake8-keyword-arguments"
-version = "0.1.0"
-description = "A flake8 extension that is looking for function calls and forces to use keyword arguments if there are more than X arguments"
-category = "dev"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-flake8 = "*"
-typing-extensions = "*"
-
-[[package]]
 name = "flake8-mutable"
 version = "1.2.0"
 description = "mutable defaults flake8 extension"
@@ -658,7 +646,7 @@ test = ["sanic-testing", "pytest (==5.2.1)", "multidict (>=5.0,<6.0)", "gunicorn
 
 [[package]]
 name = "sanic-routing"
-version = "0.5.1"
+version = "0.5.2"
 description = "Core routing component for Sanic"
 category = "main"
 optional = false
@@ -877,7 +865,7 @@ python-versions = ">=3.6.1"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "a7b1aa227990ad54aef557b4135c50a71b4035180f3b86e1ec129b3de16c0f1a"
+content-hash = "f20503b2ecbd500d96c1e1b2545a479e4ad7c4a6902c0956ef55b7ebe1f51398"
 
 [metadata.files]
 aiofiles = [
@@ -962,10 +950,6 @@ flake8-functions = [
 flake8-import-order = [
     {file = "flake8-import-order-0.18.1.tar.gz", hash = "sha256:a28dc39545ea4606c1ac3c24e9d05c849c6e5444a50fb7e9cdd430fc94de6e92"},
     {file = "flake8_import_order-0.18.1-py2.py3-none-any.whl", hash = "sha256:90a80e46886259b9c396b578d75c749801a41ee969a235e163cfe1be7afd2543"},
-]
-flake8-keyword-arguments = [
-    {file = "flake8_keyword_arguments-0.1.0-py3-none-any.whl", hash = "sha256:615977c41b8a1ced10c1ca723d4778b1ef33d401f8a997912052b6f60bb613b5"},
-    {file = "flake8_keyword_arguments-0.1.0.tar.gz", hash = "sha256:a15b6731713f37f2e5d1a60c5e2e04bc6c24569a4708b4054321580665e5f1bd"},
 ]
 flake8-mutable = [
     {file = "flake8-mutable-1.2.0.tar.gz", hash = "sha256:ee9b77111b867d845177bbc289d87d541445ffcc6029a0c5c65865b42b18c6a6"},
@@ -1247,8 +1231,8 @@ sanic = [
     {file = "sanic-21.3.2.tar.gz", hash = "sha256:84a04c5f12bf321bed3942597787f1854d15c18f157aebd7ced8c851ccc49e08"},
 ]
 sanic-routing = [
-    {file = "sanic-routing-0.5.1.tar.gz", hash = "sha256:9e83ae428abca768db38922010a1ad4bbba38a17939b9a54128c723931e37f30"},
-    {file = "sanic_routing-0.5.1-py3-none-any.whl", hash = "sha256:bf854dd043817ff27d7c1cc3219a7c317e98f65eeb6103f03cec34569451f728"},
+    {file = "sanic-routing-0.5.2.tar.gz", hash = "sha256:96f3fe59d2b351aa3accb73362b839fba6263cf092c1a9c2e3774e66680562cd"},
+    {file = "sanic_routing-0.5.2-py3-none-any.whl", hash = "sha256:c90c85948687e50ea72cb0cfa6e24fc0dd02b79b62b44cfa9e2b55a814781396"},
 ]
 six = [
     {file = "six-1.15.0-py2.py3-none-any.whl", hash = "sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced"},

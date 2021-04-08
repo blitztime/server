@@ -18,6 +18,13 @@ app = Sanic(name='Blitztime', configure_logging=False)
 View = Callable[..., Awaitable[HTTPResponse]]
 
 
+class TimerSettings(pydantic.BaseModel):
+    """Options for creating a timer."""
+
+    stages: list[TimerStageSettings]
+    as_manager: bool = False
+
+
 class ApiError(Exception):
     """Exception raised when the API detects an error in input."""
 
@@ -58,31 +65,42 @@ async def get_timer(request: Request, timer_id: int) -> HTTPResponse:
     return json(timer.to_dict())
 
 
-@app.post('/timer/<timer_id:int>/away')
+@app.post('/timer/<timer_id:int>/<side:int>')
 @catch_exceptions
-async def join_game(request: Request, timer_id: int) -> HTTPResponse:
-    """Join the away side of a timer."""
+async def join_timer(
+        request: Request, timer_id: int, side: int) -> HTTPResponse:
+    """Join the home or away side of a timer."""
+    if side < 0 or side > 2:
+        raise ApiError(422, 'Side must be 0 (home) or 1 (away).')
     timer = GameTimer.get_timer(timer_id)
     if timer is None:
         raise ApiError(404, 'Timer not found.')
-    if timer.has_away_joined:
-        raise ApiError(409, 'Game already full.')
-    side = GameSide.create()
-    timer.away = side
+    if (timer.home and side == 0) or (timer.away and side == 1):
+        raise ApiError(409, 'Side already joined.')
+    game_side = GameSide.create()
+    if side == 0:
+        timer.home = game_side
+    else:
+        timer.away = game_side
     timer.save()
-    return json({'token': side.token, 'timer': timer_id})
+    return json({'token': game_side.token, 'timer': timer_id})
 
 
 @app.post('/timer')
 @catch_exceptions
 async def create_timer(request: Request) -> HTTPResponse:
     """Create a new timer."""
-    side = GameSide.create()
-    settings = pydantic.parse_obj_as(list[TimerStageSettings], request.json)
-    if settings[0].start_turn != 0:
+    options = TimerSettings.parse_obj(request.json)
+    if options.stages[0].start_turn != 0:
         raise ApiError(422, 'First stage must start on turn 0.')
-    timer = GameTimer.create(home=side, settings=settings)
-    return json({'token': side.token, 'timer': timer.id})
+    if options.as_manager:
+        timer = GameTimer.create(settings=options.stages)
+        token = timer.manager_token
+    else:
+        side = GameSide.create()
+        timer = GameTimer.create(home=side, settings=options.stages)
+        token = side.token
+    return json({'token': token, 'timer': timer.id})
 
 
 @app.get('/stats')

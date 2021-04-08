@@ -4,7 +4,7 @@ from __future__ import annotations
 import base64
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import peewee
 
@@ -121,10 +121,10 @@ class GameSide(BaseModel):
         opponent = self.opponent
         self.is_turn = False
         opponent.is_turn = True
-        settings = self.timer.get_settings()
-        self.timer.turn_number += 1
+        settings = self.game.get_settings()
+        self.game.turn_number += 1
         extra_time = (
-            now - self.timer.turn_started_at - settings.fixed_time_per_turn
+            now - self.game.turn_started_at - settings.fixed_time_per_turn
         )
         if extra_time > timedelta(0):
             self.total_time -= extra_time
@@ -134,21 +134,21 @@ class GameSide(BaseModel):
         self.total_time += settings.increment_per_turn
         if (
                 settings.start_turn > 0
-                and self.timer.turn_number // 2 == settings.start_turn):
-            self.total_time = self.timer.get_settings().initial_time
-        self.timer.turn_started_at = now
+                and self.game.turn_number // 2 == settings.start_turn):
+            self.total_time = self.game.get_settings().initial_time
+        self.game.turn_started_at = now
         self.save()
         opponent.save()
-        self.timer.save()
+        self.game.save()
 
     def is_timed_out(self) -> bool:
         """Check if this side is timed out."""
         now = datetime.now(tz=TZ)
         if not self.is_turn:
             return False
-        settings = self.timer.get_settings()
+        settings = self.game.get_settings()
         extra_time = (
-            now - self.timer.turn_started_at - settings.fixed_time_per_turn
+            now - self.game.turn_started_at - settings.fixed_time_per_turn
         )
         if extra_time > timedelta(0):
             return self.total_time - extra_time < timedelta(0)
@@ -167,14 +167,15 @@ class GameTimer(BaseModel):
     """Timer state for a game."""
 
     turn_number = peewee.IntegerField(default=-1)
-    has_away_joined = peewee.BooleanField(default=False)
     turn_started_at = peewee.DateTimeField(null=True)
     started_at = peewee.DateTimeField(null=True)
     has_ended = peewee.BooleanField(default=False)
-    home = peewee.ForeignKeyField(GameSide, backref='game')
+    home = peewee.ForeignKeyField(GameSide, backref='game', null=True)
     away = peewee.ForeignKeyField(GameSide, backref='game', null=True)
     settings = TimerSettings()
     observers = peewee.IntegerField(default=0)
+    manager_token = peewee.TextField(default=create_token)
+    manager_session_id = peewee.TextField(null=True)
 
     @classmethod
     def get_timer(cls, id: int) -> Optional[GameTimer]:
@@ -189,8 +190,8 @@ class GameTimer(BaseModel):
         return None
 
     @classmethod
-    def get_timer_side(
-            cls, id: int, token: str) -> Optional[GameSide]:
+    def get_timer_side(cls, id: int, token: str) -> Optional[
+            Union[GameSide, GameTimer]]:
         """Get a timer by ID and token.
 
         Second return indicates whether the token is for home or away.
@@ -202,24 +203,15 @@ class GameTimer(BaseModel):
             return timer.home
         elif timer.away.token == token:
             return timer.away
+        elif timer.manager_token == token:
+            return timer
         return None
-
-    @classmethod
-    def join(cls, id: int) -> Optional[GameSide]:
-        """Join a user to the away side of a game."""
-        timer = cls.get_timer(id)
-        if not timer:
-            return None
-        if timer.has_away_joined:
-            return None
-        return timer.away
 
     def to_dict(self) -> dict[str, Any]:
         """Get the state of the game as a dict to return as JSON."""
         return {
             'id': self.id,
             'turn_number': self.turn_number,
-            'has_away_joined': self.has_away_joined,
             'turn_started_at': self.turn_started_at.timestamp(),
             'started_at': self.started_at.timestamp(),
             'has_ended': self.has_ended,

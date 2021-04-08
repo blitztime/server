@@ -17,12 +17,17 @@ Start a timer that has not yet started. This can only be sent by the host, once 
 ``end_turn``
 ------------
 
-End the turn of the connected client. This may only be sent when it is the client's turn. No data should be included.
+End the turn of the connected client. This may only be sent when it is the client's turn. No data should be included. This can only be sent using a player token.
 
 ``opponent_timed_out``
 ----------------------
 
-Should be sent by one client when that client's opponent has timed out. This will instruct the server to re-check the game, and end the game if necessary. If a client notices that it itself has timed out, it should instead use ``end_turn``. No data should be included.
+Should be sent by one client when that client's opponent has timed out. This will instruct the server to re-check the game, and end the game if necessary. If a client notices that it itself has timed out, it should instead use ``end_turn``. No data should be included. This can only be sent using a player token.
+
+``add_time``
+------------
+
+Add time to both the home and away timers. Time should be given in seconds as the event data, an integer. This can only be sent using a manager token.
 
 Server-sent events
 ==================

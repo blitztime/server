@@ -1,4 +1,5 @@
 """Socket IO app for WebSocket connections."""
+from datetime import timedelta
 from typing import Any, Optional
 
 import socketio
@@ -28,9 +29,19 @@ async def get_game_side(sid: str) -> Optional[GameSide]:
     """Get the game side a connection is for."""
     side = GameSide.get_or_none(GameSide.session_id == sid)
     if not side:
-        await send_error('Only players can send events.', sid)
+        await send_error('Only players can send this event.', sid)
     else:
         return side
+    return None
+
+
+async def get_game(sid: str) -> Optional[GameTimer]:
+    """Get the game a connection is a manager for."""
+    timer = GameTimer.get_or_none(GameTimer.manager_session_id == sid)
+    if not timer:
+        await send_error('Only managers can send this event.', sid)
+    else:
+        return timer
     return None
 
 
@@ -47,11 +58,18 @@ async def connect(sid: str, environ: dict[str, Any]) -> bool:
     token = environ.get('HTTP_Authorization', None)
     if token:
         side = GameTimer.get_timer_side(timer_id, token)
-        if not side:
+        if isinstance(side, GameTimer):
+            # "side" is actually the timer.
+            side.manager_session_id = sid
+            side.observers += 1
+            side.save()
+            await send_state(side)
+        elif not side:
             return False
-        side.session_id = sid
-        side.save()
-        await send_state(side.game)
+        else:
+            side.session_id = sid
+            side.save()
+            await send_state(side.game)
     else:
         game = GameTimer.get_timer(timer_id)
         if not game:
@@ -122,3 +140,23 @@ async def opponent_timed_out(sid: str, data: Any):
         return
     side.opponent.end_turn()
     await send_state(side.game)
+
+
+@app.event
+async def add_time(sid: str, seconds: int):
+    """Add time to both players' clocks."""
+    game = await get_game(sid)
+    if not game:
+        return
+    if (not side.game.started_at) or side.game.has_ended:
+        await send_error('Game is not ongoing.', sid)
+        return
+    if not isinstance(seconds, int):
+        await send_error('Seconds to add should be an int.', sid)
+        return
+    time = timedelta(seconds=seconds)
+    game.home.total_time += time
+    game.away.total_time += time
+    game.home.save()
+    game.away.save()
+    await send_state(game)
