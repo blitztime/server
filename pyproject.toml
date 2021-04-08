@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "blitztime-server"
-version = "0.1.0"
+version = "0.1.1"
 description = "API server for Blitztime, a game timer for Polytopia."
 authors = ["Artemis21 <artemisdev21@gmail.com>"]
 license = "MIT"

@@ -21,7 +21,6 @@ The following options are available in the configuration file:
 
 | Name              | Default     | Description                       |
 |:-----------------:|:-----------:|:----------------------------------|
-| `allowed_origins` | `[]`        | Allowed origins for CORS headers. |
 | `db_name`         | `blitztime` | Name of the database.             |
 | `db_user`         | `blitztime` | Username for the database.        |
 | `db_host`         | `127.0.0.1` | Host address of the database.     |

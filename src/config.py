@@ -26,7 +26,6 @@ def get_log_level(field: str, default: int) -> int:
     }[raw.lower()]
 
 
-ALLOWED_ORIGINS = config.get('allowed_origins', [])
 HTTP_LOG_LEVEL = get_log_level('http_log_level', logging.INFO)
 WS_LOG_LEVEL = get_log_level('ws_log_level', logging.INFO)
 

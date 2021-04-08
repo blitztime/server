@@ -8,7 +8,7 @@ from .models import GameSide, GameTimer
 
 app = socketio.AsyncServer(
     async_mode='sanic',
-    cors_allowed_origins=[],    # Leave CORS to Sanic.
+    cors_allowed_origins=[],
     logger=True,
     engineio_logger=True
 )
