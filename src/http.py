@@ -10,10 +10,13 @@ import pydantic
 from sanic import Request, Sanic
 from sanic.response import HTTPResponse, json
 
+from sanic_cors import CORS
+
 from .models import GameSide, GameTimer, TimerStageSettings
 
 
 app = Sanic(name='Blitztime', configure_logging=False)
+CORS(app)
 
 View = Callable[..., Awaitable[HTTPResponse]]
 

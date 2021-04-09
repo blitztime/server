@@ -17,6 +17,7 @@ sanic = "^21.3.2"
 python-socketio = "^5.1.0"
 pydantic = "^1.8.1"
 psycopg2 = "^2.8.6"
+Sanic-Cors = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.0"
