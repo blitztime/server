@@ -48,36 +48,36 @@ async def get_game(sid: str) -> Optional[GameTimer]:
 @app.event
 async def connect(sid: str, environ: dict[str, Any]) -> bool:
     """Handle a client connecting to the socket."""
-    raw_id = environ.get('HTTP_Blitztime-Timer', None)
+    raw_id = environ.get('HTTP_BLITZTIME_TIMER', None)
     if not raw_id:
         return False
     try:
         timer_id = int(raw_id)
     except ValueError:
         return False
-    token = environ.get('HTTP_Authorization', None)
+    token = environ.get('HTTP_AUTHORIZATION', None)
     if token:
         side = GameTimer.get_timer_side(timer_id, token)
         if isinstance(side, GameTimer):
             # "side" is actually the timer.
-            side.manager_session_id = sid
-            side.observers += 1
-            side.save()
-            await send_state(side)
+            game = side
+            game.manager_session_id = sid
+            game.observers += 1
+            game.save()
         elif not side:
             return False
         else:
             side.session_id = sid
             side.save()
-            await send_state(side.game)
+            game = side.game
     else:
         game = GameTimer.get_timer(timer_id)
         if not game:
             return False
         game.observers += 1
         game.save()
-    app.enter_room(sid, str(timer_id))
-    await send_state(side.game)
+    app.enter_room(sid, 't-' + str(timer_id))
+    await send_state(game)
     return True
 
 
@@ -88,10 +88,13 @@ async def disconnect(sid: str):
     if side:
         side.session_id = None
         side.save()
+        game = side.game
     else:
-        side.game.observers -= 1
-        side.game.save()
-    await send_state(side.game)
+        game_id = int(app.manager.get_rooms(sid, '/')[1][2:])
+        game = GameTimer.get_by_id(game_id)
+        game.observers -= 1
+        game.save()
+    await send_state(game)
 
 
 @app.event

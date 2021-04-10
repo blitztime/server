@@ -14,8 +14,8 @@ from . import config, http, ws
 LOGS = (
     ('peewee', config.DB_LOG_LEVEL),
     ('sanic.root', config.HTTP_LOG_LEVEL),
-    ('socketio', config.WS_LOG_LEVEL),
-    ('engineio', config.WS_LOG_LEVEL)
+    ('socketio.server', config.WS_LOG_LEVEL),
+    ('engineio.server', config.WS_LOG_LEVEL)
 )
 for log, level in LOGS:
     logger = logging.getLogger(log)

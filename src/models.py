@@ -74,7 +74,7 @@ class TimerSettings(JSONField):
 
     def python_value(self, value: Any) -> Optional[list[TimerStageSettings]]:
         """Convert a JSON value to timer settings."""
-        value = super.python_value(value)
+        value = super().python_value(value)
         if value is None:
             return None
         stages = [TimerStageSettings(**options) for options in value]
@@ -162,6 +162,13 @@ class GameSide(BaseModel):
         else:
             return self.game.home
 
+    @property
+    def game(self) -> GameTimer:
+        """Get the game this player is from."""
+        return GameTimer.get(
+            (GameTimer.home == self) | (GameTimer.away == self)
+        )
+
 
 class GameTimer(BaseModel):
     """Timer state for a game."""
@@ -170,8 +177,8 @@ class GameTimer(BaseModel):
     turn_started_at = peewee.DateTimeField(null=True)
     started_at = peewee.DateTimeField(null=True)
     has_ended = peewee.BooleanField(default=False)
-    home = peewee.ForeignKeyField(GameSide, backref='game', null=True)
-    away = peewee.ForeignKeyField(GameSide, backref='game', null=True)
+    home = peewee.ForeignKeyField(GameSide, null=True)
+    away = peewee.ForeignKeyField(GameSide, null=True)
     settings = TimerSettings()
     observers = peewee.IntegerField(default=0)
     manager_token = peewee.TextField(default=create_token)
@@ -183,6 +190,7 @@ class GameTimer(BaseModel):
         query = cls.select().where(cls.id == id).join(
             GameSide,
             on=(cls.home == GameSide.id) | (cls.away == GameSide.id),
+            join_type=peewee.JOIN.LEFT_OUTER
         ).limit(1)
         records = list(query)
         if records:
@@ -199,9 +207,9 @@ class GameTimer(BaseModel):
         timer = cls.get_timer(id)
         if not timer:
             return None
-        if timer.home.token == token:
+        if timer.home and timer.home.token == token:
             return timer.home
-        elif timer.away.token == token:
+        elif timer.away and timer.away.token == token:
             return timer.away
         elif timer.manager_token == token:
             return timer
@@ -209,13 +217,17 @@ class GameTimer(BaseModel):
 
     def to_dict(self) -> dict[str, Any]:
         """Get the state of the game as a dict to return as JSON."""
+        turn_started_at = (
+            self.turn_started_at.timestamp() if self.turn_started_at else None
+        )
+        started_at = self.started_at.timestamp() if self.started_at else None
         return {
             'id': self.id,
             'turn_number': self.turn_number,
-            'turn_started_at': self.turn_started_at.timestamp(),
-            'started_at': self.started_at.timestamp(),
+            'turn_started_at': turn_started_at,
+            'started_at': started_at,
             'has_ended': self.has_ended,
-            'home': self.home.to_dict(),
+            'home': self.home.to_dict() if self.home else None,
             'away': self.away.to_dict() if self.away else None,
             'settings': [stage.dict() for stage in self.settings],
             'observers': self.observers,
@@ -223,8 +235,9 @@ class GameTimer(BaseModel):
 
     def get_settings(self) -> TimerStageSettings:
         """Get the settings for the current stage."""
+        turn = max(self.turn_number, 0) // 2
         for stage in reversed(self.settings):
-            if stage.start_turn <= self.turn_number:
+            if stage.start_turn <= turn:
                 return stage
         # We should never get here, since one stage should have start_turn=0.
         raise ValueError('No first stage found.')

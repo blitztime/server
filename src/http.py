@@ -115,8 +115,8 @@ async def get_stats(request: Request) -> HTTPResponse:
         fn.COUNT(GameTimer.id).filter(~GameTimer.has_ended),
         fn.COALESCE(fn.SUM(GameTimer.observers), 0),
     ).scalar(as_tuple=True)
-    print(timers, ongoing, observers)
-    players = GameSide.select().where(GameSide.token.is_null(False)).count()
+    players = GameSide.select().where(
+        GameSide.session_id.is_null(False)).count()
     return json({
         'all_timers': timers,
         'ongoing_timers': ongoing,
