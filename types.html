@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Types &mdash; Blitztime API Server 0.2.0 documentation</title>
+  <title>Types &mdash; Blitztime API Server 0.3.0 documentation</title>
   
 
   
@@ -92,6 +92,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#timerside"><code class="docutils literal notranslate"><span class="pre">TimerSide</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#stagesettings"><code class="docutils literal notranslate"><span class="pre">StageSettings</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#appstats"><code class="docutils literal notranslate"><span class="pre">AppStats</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#userposition"><code class="docutils literal notranslate"><span class="pre">UserPosition</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#error"><code class="docutils literal notranslate"><span class="pre">Error</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#timedelta"><code class="docutils literal notranslate"><span class="pre">timedelta</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#datetime"><code class="docutils literal notranslate"><span class="pre">datetime</span></code></a></li>
@@ -167,7 +168,7 @@
             
   <div class="section" id="types">
 <h1>Types<a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h1>
-<p>These are the types of JSON object the server may return/accept, as referenced elsewhere in the docs.</p>
+<p>These are the types of JSON entity the server may return/accept, as referenced elsewhere in the docs.</p>
 <div class="section" id="timer">
 <h2><code class="docutils literal notranslate"><span class="pre">Timer</span></code><a class="headerlink" href="#timer" title="Permalink to this headline">¶</a></h2>
 <p>The state of a game timer.</p>
@@ -178,6 +179,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">turn_started_at</span></code>: <code class="docutils literal notranslate"><span class="pre">datetime</span></code> or <code class="docutils literal notranslate"><span class="pre">null</span></code>, the time the current turn started (see below)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">started_at</span></code>: <code class="docutils literal notranslate"><span class="pre">datetime</span></code> or <code class="docutils literal notranslate"><span class="pre">null</span></code>, the time the first move started (see below)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">has_ended</span></code>: <code class="docutils literal notranslate"><span class="pre">bool</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">end_reporter</span></code>: <code class="docutils literal notranslate"><span class="pre">UserPosition</span></code> (see below) or <code class="docutils literal notranslate"><span class="pre">null</span></code>, the side that reported the end, if the game was ended early.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">home</span></code>: <code class="docutils literal notranslate"><span class="pre">TimerSide</span></code> (see below) or <code class="docutils literal notranslate"><span class="pre">null</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">away</span></code>: <code class="docutils literal notranslate"><span class="pre">TimerSide</span></code> (see below) or <code class="docutils literal notranslate"><span class="pre">null</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">settings</span></code>: <code class="docutils literal notranslate"><span class="pre">array</span></code> of <code class="docutils literal notranslate"><span class="pre">StageSettings</span></code> (see below)</p></li>
@@ -214,6 +216,17 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">ongoing_timers</span></code>: <code class="docutils literal notranslate"><span class="pre">int</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">connected</span></code>: <code class="docutils literal notranslate"><span class="pre">int</span></code></p></li>
 </ul>
+</div>
+<div class="section" id="userposition">
+<h2><code class="docutils literal notranslate"><span class="pre">UserPosition</span></code><a class="headerlink" href="#userposition" title="Permalink to this headline">¶</a></h2>
+<p>An <code class="docutils literal notranslate"><span class="pre">int</span></code> defining the position of a user in a game. Possible values:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-2</span></code>: Observer</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-1</span></code>: Manager</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">0</span></code>: Home</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">1</span></code>: Away</p></li>
+</ul>
+<p>Note that there is currently no situation in which <code class="docutils literal notranslate"><span class="pre">-2</span></code> would be used.</p>
 </div>
 <div class="section" id="error">
 <h2><code class="docutils literal notranslate"><span class="pre">Error</span></code><a class="headerlink" href="#error" title="Permalink to this headline">¶</a></h2>

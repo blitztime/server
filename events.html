@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Socket.IO Events &mdash; Blitztime API Server 0.2.0 documentation</title>
+  <title>Socket.IO Events &mdash; Blitztime API Server 0.3.0 documentation</title>
   
 
   
@@ -92,6 +92,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#end-turn"><code class="docutils literal notranslate"><span class="pre">end_turn</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#opponent-timed-out"><code class="docutils literal notranslate"><span class="pre">opponent_timed_out</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#add-time"><code class="docutils literal notranslate"><span class="pre">add_time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#end-game"><code class="docutils literal notranslate"><span class="pre">end_game</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#server-sent-events">Server-sent events</a><ul>
@@ -191,6 +192,10 @@
 <div class="section" id="add-time">
 <h3><code class="docutils literal notranslate"><span class="pre">add_time</span></code><a class="headerlink" href="#add-time" title="Permalink to this headline">¶</a></h3>
 <p>Add time to both the home and away timers. Time should be given in seconds as the event data, an integer. This can only be sent using a manager token.</p>
+</div>
+<div class="section" id="end-game">
+<h3><code class="docutils literal notranslate"><span class="pre">end_game</span></code><a class="headerlink" href="#end-game" title="Permalink to this headline">¶</a></h3>
+<p>End the game before the timer has run out (eg. defeat, resignation). This can be sent using a manager or player token.</p>
 </div>
 </div>
 <div class="section" id="server-sent-events">
