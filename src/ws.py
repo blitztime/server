@@ -90,15 +90,21 @@ async def disconnect(sid: str):
         side.save()
         game = side.game
     else:
-        game_id = int(app.manager.get_rooms(sid, '/')[1][2:])
-        game = GameTimer.get_by_id(game_id)
-        game.observers -= 1
-        game.save()
+        rooms = app.manager.get_rooms(sid, '/')
+        for room in rooms:
+            try:
+                game_id = int(room[2:])
+            except ValueError:
+                continue
+            game = GameTimer.get_by_id(game_id)
+            game.observers -= 1
+            game.save()
+            break
     await send_state(game)
 
 
 @app.event
-async def start_timer(sid: str, data: Any):
+async def start_timer(sid: str):
     """Start an unstarted timer."""
     side = await get_game_side(sid)
     if not side:
@@ -106,7 +112,7 @@ async def start_timer(sid: str, data: Any):
     if side.game.started_at:
         await send_error('Game already started.', sid)
         return
-    if side.game.host_id != side.id:
+    if side.game.home_id != side.id:
         await send_error('Only host can start game.', sid)
         return
     if not side.game.away:
@@ -117,7 +123,7 @@ async def start_timer(sid: str, data: Any):
 
 
 @app.event
-async def end_turn(sid: str, data: Any):
+async def end_turn(sid: str):
     """End the client's turn."""
     side = await get_game_side(sid)
     if not side:
@@ -125,12 +131,12 @@ async def end_turn(sid: str, data: Any):
     if not side.is_turn:
         await send_error('Not currently your turn.', sid)
         return
-    await side.end_turn()
+    side.end_turn()
     await send_state(side.game)
 
 
 @app.event
-async def opponent_timed_out(sid: str, data: Any):
+async def opponent_timed_out(sid: str):
     """Check the client's opponent's time."""
     side = await get_game_side(sid)
     if not side:
@@ -146,12 +152,40 @@ async def opponent_timed_out(sid: str, data: Any):
 
 
 @app.event
+async def end_game(sid: str):
+    """Check the client's opponent's time."""
+    timer = GameTimer.get_or_none(GameTimer.manager_session_id == sid)
+    if timer:
+        reporting_side = None
+    else:
+        reporting_side = GameSide.get_or_none(GameSide.session_id == sid)
+        if not reporting_side:
+            await send_error('This event cannot be sent by an observer.', sid)
+            return
+        timer = reporting_side.game
+    current_side = timer.get_current_side()
+    if not current_side:
+        await send_error('Game is not ongoing.', sid)
+        return
+    current_side.end_turn()
+    if reporting_side == timer.home:
+        timer.end_reporter = 0
+    elif reporting_side == timer.away:
+        timer.end_reporter = 1
+    else:
+        timer.end_reporter = -1
+    # `timer.end()` calls `timer.save()`, so we don't have to.
+    timer.end()
+    await send_state(timer)
+
+
+@app.event
 async def add_time(sid: str, seconds: int):
     """Add time to both players' clocks."""
     game = await get_game(sid)
     if not game:
         return
-    if (not side.game.started_at) or side.game.has_ended:
+    if (not game.started_at) or game.has_ended:
         await send_error('Game is not ongoing.', sid)
         return
     if not isinstance(seconds, int):

@@ -45,6 +45,17 @@ class TimedeltaField(peewee.DateTimeField):
         return timedelta(seconds=as_date.timestamp())
 
 
+class DatetimeField(peewee.DateTimeField):
+    """A datetime field that adds a timezone."""
+
+    def python_value(self, value: str) -> Optional[datetime]:
+        """Add a timezone to a datetime."""
+        as_date: datetime = super().python_value(value)
+        if not as_date:
+            return None
+        return as_date.astimezone(TZ)
+
+
 class TimerStageSettings(pydantic.BaseModel):
     """Settings for one stage of a timer."""
 
@@ -119,27 +130,31 @@ class GameSide(BaseModel):
         """End this side's turn and start the next."""
         now = datetime.now(tz=TZ)
         opponent = self.opponent
+        game = self.game
         self.is_turn = False
         opponent.is_turn = True
-        settings = self.game.get_settings()
-        self.game.turn_number += 1
+        settings = game.get_settings()
+        game.turn_number += 1
         extra_time = (
-            now - self.game.turn_started_at - settings.fixed_time_per_turn
+            now - game.turn_started_at - settings.fixed_time_per_turn
         )
-        if extra_time > timedelta(0):
+        if extra_time >= timedelta(0):
             self.total_time -= extra_time
-            if self.total_time < timedelta(0):
+            if self.total_time <= timedelta(0):
+                self.total_time = timedelta(0)
+                self.save()
                 self.game.end()
                 return
         self.total_time += settings.increment_per_turn
+        settings = game.get_settings()
         if (
                 settings.start_turn > 0
-                and self.game.turn_number // 2 == settings.start_turn):
-            self.total_time = self.game.get_settings().initial_time
-        self.game.turn_started_at = now
+                and game.turn_number // 2 == settings.start_turn):
+            self.total_time += settings.initial_time
+        game.turn_started_at = now
         self.save()
         opponent.save()
-        self.game.save()
+        game.save()
 
     def is_timed_out(self) -> bool:
         """Check if this side is timed out."""
@@ -174,9 +189,10 @@ class GameTimer(BaseModel):
     """Timer state for a game."""
 
     turn_number = peewee.IntegerField(default=-1)
-    turn_started_at = peewee.DateTimeField(null=True)
-    started_at = peewee.DateTimeField(null=True)
+    turn_started_at = DatetimeField(null=True)
+    started_at = DatetimeField(null=True)
     has_ended = peewee.BooleanField(default=False)
+    end_reporter = peewee.IntegerField(null=True)
     home = peewee.ForeignKeyField(GameSide, null=True)
     away = peewee.ForeignKeyField(GameSide, null=True)
     settings = TimerSettings()
@@ -227,6 +243,7 @@ class GameTimer(BaseModel):
             'turn_started_at': turn_started_at,
             'started_at': started_at,
             'has_ended': self.has_ended,
+            'end_reporter': self.end_reporter,
             'home': self.home.to_dict() if self.home else None,
             'away': self.away.to_dict() if self.away else None,
             'settings': [stage.dict() for stage in self.settings],
@@ -247,13 +264,20 @@ class GameTimer(BaseModel):
         now = datetime.now(tz=TZ)
         self.turn_number = 0
         self.home.is_turn = True
+        start_time = self.get_settings().initial_time
+        self.home.total_time = start_time
+        self.away.total_time = start_time
         self.turn_started_at = now
         self.started_at = now
+        self.home.save()
+        self.away.save()
         self.save()
 
     def end(self):
         """End the game."""
         self.has_ended = True
+        self.home.is_turn = False
+        self.away.is_turn = False
         self.home.save()
         self.away.save()
         self.save()

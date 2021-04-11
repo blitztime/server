@@ -29,6 +29,11 @@ Should be sent by one client when that client's opponent has timed out. This wil
 
 Add time to both the home and away timers. Time should be given in seconds as the event data, an integer. This can only be sent using a manager token.
 
+``end_game``
+------------
+
+End the game before the timer has run out (eg. defeat, resignation). This can be sent using a manager or player token.
+
 Server-sent events
 ==================
 

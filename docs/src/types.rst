@@ -2,7 +2,7 @@
 Types
 =====
 
-These are the types of JSON object the server may return/accept, as referenced elsewhere in the docs.
+These are the types of JSON entity the server may return/accept, as referenced elsewhere in the docs.
 
 ``Timer``
 =========
@@ -16,6 +16,7 @@ Fields:
 - ``turn_started_at``: ``datetime`` or ``null``, the time the current turn started (see below)
 - ``started_at``: ``datetime`` or ``null``, the time the first move started (see below)
 - ``has_ended``: ``bool``
+- ``end_reporter``: ``UserPosition`` (see below) or ``null``, the side that reported the end, if the game was ended early.
 - ``home``: ``TimerSide`` (see below) or ``null``
 - ``away``: ``TimerSide`` (see below) or ``null``
 - ``settings``: ``array`` of ``StageSettings`` (see below)
@@ -54,6 +55,18 @@ Fields:
 - ``all_timers``: ``int``
 - ``ongoing_timers``: ``int``
 - ``connected``: ``int``
+
+``UserPosition``
+================
+
+An ``int`` defining the position of a user in a game. Possible values:
+
+- ``-2``: Observer
+- ``-1``: Manager
+- ``0``: Home
+- ``1``: Away
+
+Note that there is currently no situation in which ``-2`` would be used.
 
 ``Error``
 =========
