@@ -51,7 +51,9 @@ Returns (JSON body):
 
 Raises: ``422`` (bad settings) or ``500`` (server error).
 
-If ``as_manager`` is ``false``, you will be added to the game as the host, and the token returned will be a player token. Otherwise, no host will be added and the token returned will be a manager token.
+If ``as_manager`` is ``false``, you will be added to the game as the host, and the token returned will be a player token. The game will be unmanaged.
+
+Otherwise, no host will be added and the token returned will be a manager token.
 
 ``GET /stats``
 ==============

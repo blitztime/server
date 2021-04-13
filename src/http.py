@@ -12,7 +12,7 @@ from sanic.response import HTTPResponse, json
 
 from sanic_cors import CORS
 
-from .models import GameSide, GameTimer, TimerStageSettings
+from .models import GameSide, GameTimer, Session, TimerStageSettings
 
 
 app = Sanic(name='Blitztime', configure_logging=False)
@@ -110,15 +110,13 @@ async def create_timer(request: Request) -> HTTPResponse:
 @catch_exceptions
 async def get_stats(request: Request) -> HTTPResponse:
     """Get stats on the app."""
-    timers, ongoing, observers = GameTimer.select(
+    timers, ongoing = GameTimer.select(
         fn.COUNT(GameTimer.id),
         fn.COUNT(GameTimer.id).filter(~GameTimer.has_ended),
-        fn.COALESCE(fn.SUM(GameTimer.observers), 0),
     ).scalar(as_tuple=True)
-    players = GameSide.select().where(
-        GameSide.session_id.is_null(False)).count()
+    connected = Session.select().count()
     return json({
         'all_timers': timers,
         'ongoing_timers': ongoing,
-        'connected': observers + players,
+        'connected': connected,
     })

@@ -114,7 +114,6 @@ class GameSide(BaseModel):
     """One side of a game timer."""
 
     token = peewee.TextField(default=create_token)
-    session_id = peewee.TextField(null=True)
     is_turn = peewee.BooleanField(default=False)
     total_time = TimedeltaField(default=timedelta(0))
 
@@ -123,7 +122,7 @@ class GameSide(BaseModel):
         return {
             'is_turn': self.is_turn,
             'total_time': self.total_time.total_seconds(),
-            'connected': bool(self.session_id),
+            'connected': bool(self.sessions.select().count()),
         }
 
     def end_turn(self):
@@ -181,7 +180,7 @@ class GameSide(BaseModel):
     def game(self) -> GameTimer:
         """Get the game this player is from."""
         return GameTimer.get(
-            (GameTimer.home == self) | (GameTimer.away == self)
+            (GameTimer.home == self) | (GameTimer.away == self),
         )
 
 
@@ -197,8 +196,8 @@ class GameTimer(BaseModel):
     away = peewee.ForeignKeyField(GameSide, null=True)
     settings = TimerSettings()
     observers = peewee.IntegerField(default=0)
+    managed = peewee.BooleanField(default=False)
     manager_token = peewee.TextField(default=create_token)
-    manager_session_id = peewee.TextField(null=True)
 
     @classmethod
     def get_timer(cls, id: int) -> Optional[GameTimer]:
@@ -206,7 +205,7 @@ class GameTimer(BaseModel):
         query = cls.select().where(cls.id == id).join(
             GameSide,
             on=(cls.home == GameSide.id) | (cls.away == GameSide.id),
-            join_type=peewee.JOIN.LEFT_OUTER
+            join_type=peewee.JOIN.LEFT_OUTER,
         ).limit(1)
         records = list(query)
         if records:
@@ -218,7 +217,8 @@ class GameTimer(BaseModel):
             Union[GameSide, GameTimer]]:
         """Get a timer by ID and token.
 
-        Second return indicates whether the token is for home or away.
+        Returns a GameSide if the token is for a side, or a GameTimer if the
+        token is for game management.
         """
         timer = cls.get_timer(id)
         if not timer:
@@ -230,6 +230,11 @@ class GameTimer(BaseModel):
         elif timer.manager_token == token:
             return timer
         return None
+
+    @property
+    def ongoing(self) -> bool:
+        """Check if the game is ongoing."""
+        return self.started_at and not self.has_ended
 
     def to_dict(self) -> dict[str, Any]:
         """Get the state of the game as a dict to return as JSON."""
@@ -247,7 +252,8 @@ class GameTimer(BaseModel):
             'home': self.home.to_dict() if self.home else None,
             'away': self.away.to_dict() if self.away else None,
             'settings': [stage.dict() for stage in self.settings],
-            'observers': self.observers,
+            'observers': self.sessions.count(),
+            'managed': self.managed,
         }
 
     def get_settings(self) -> TimerStageSettings:
@@ -291,4 +297,26 @@ class GameTimer(BaseModel):
         return None
 
 
-db.create_tables([GameSide, GameTimer])
+class Session(BaseModel):
+    """A client connection to a websocket."""
+
+    id = peewee.TextField(primary_key=True)
+    game = peewee.ForeignKeyField(GameTimer, backref='sessions')
+    side = peewee.ForeignKeyField(GameSide, null=True, backref='sessions')
+    is_manager = peewee.BooleanField(default=False)
+
+    @classmethod
+    def get_session(cls, id: str) -> Session:
+        """Get a session by ID and join on foreign keys."""
+        query = cls.select().where(cls.id == id).join(GameTimer).join(
+            GameSide,
+            on=(
+                (GameTimer.home == GameSide.id)
+                | (GameTimer.away == GameSide.id)
+            ),
+            join_type=peewee.JOIN.LEFT_OUTER,
+        ).limit(1)
+        return list(query)[0]
+
+
+db.create_tables([GameSide, GameTimer, Session])

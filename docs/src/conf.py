@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'Blitztime API Server'
 copyright = '2021, Artemis'
 author = 'Artemis'
-release = '0.3.0'
+release = '0.4.0'
 
 extensions = [
     'sphinx.ext.autodoc',

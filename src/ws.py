@@ -1,22 +1,62 @@
 """Socket IO app for WebSocket connections."""
+import functools
+import traceback
 from datetime import timedelta
-from typing import Any, Optional
+from typing import Any, Awaitable, Callable
 
 import socketio
 
-from .models import GameSide, GameTimer
+from .models import GameTimer, Session
 
 
 app = socketio.AsyncServer(
     async_mode='sanic',
     cors_allowed_origins=[],
     logger=True,
-    engineio_logger=True
+    engineio_logger=True,
 )
+
+Handler = Callable[..., Awaitable[None]]
+
+
+class ApiError(Exception):
+    """Exception raised when the API detects an error."""
+
+    def __init__(self, detail: str):
+        """Store the details of the error."""
+        super().__init__(detail)
+        self.detail = detail
+
+
+def assert_(value: bool, message: str):
+    """Raise an ApiError if a value is not truthy."""
+    if not value:
+        raise ApiError(message)
+
+
+def assert_manager_or(
+        session: Session, alternative_condition: bool, alternative_name: str):
+    """Assert that the client is a manager.
+
+    If the timer has no manager, assert that alternative_condition is truthy.
+    """
+    if session.game.managed:
+        assert_(
+            session.is_manager,
+            'Only a manager can send this event for managed games.',
+        )
+    else:
+        assert_(
+            alternative_condition,
+            f'Only {alternative_name} can send this event for unmanaged '
+            'games.',
+        )
 
 
 async def send_state(timer: GameTimer):
     """Send the current state of a timer to all clients."""
+    # Make sure we have the latest state.
+    timer = GameTimer.get_timer(timer.id)
     await app.emit('state', timer.to_dict(), room='t-' + str(timer.id))
 
 
@@ -25,24 +65,22 @@ async def send_error(message: str, sid: str):
     await app.emit('error', {'detail': message}, room=sid)
 
 
-async def get_game_side(sid: str) -> Optional[GameSide]:
-    """Get the game side a connection is for."""
-    side = GameSide.get_or_none(GameSide.session_id == sid)
-    if not side:
-        await send_error('Only players can send this event.', sid)
-    else:
-        return side
-    return None
-
-
-async def get_game(sid: str) -> Optional[GameTimer]:
-    """Get the game a connection is a manager for."""
-    timer = GameTimer.get_or_none(GameTimer.manager_session_id == sid)
-    if not timer:
-        await send_error('Only managers can send this event.', sid)
-    else:
-        return timer
-    return None
+def register_event(handler: Handler):
+    """Register an event handler and catch exceptions."""
+    @functools.wraps(handler)
+    async def wrapped(sid: str, *args: Any, **kwargs: Any):
+        """Call the wrapped handler and catch exceptions."""
+        session = Session.get_session(sid)
+        try:
+            await handler(session, *args, **kwargs)
+        except ApiError as error:
+            await send_error(str(error), sid)
+        except Exception as error:
+            print('Traceback (most recent call last):')
+            traceback.print_tb(error.__traceback__)
+            print(f'{type(error).__name__}: {error}.')
+            await send_error(str(error), sid)
+    app.event(wrapped)
 
 
 @app.event
@@ -60,140 +98,107 @@ async def connect(sid: str, environ: dict[str, Any]) -> bool:
         side = GameTimer.get_timer_side(timer_id, token)
         if isinstance(side, GameTimer):
             # "side" is actually the timer.
-            game = side
-            game.manager_session_id = sid
-            game.observers += 1
-            game.save()
+            session = Session.create(id=sid, game=side, is_manager=True)
         elif not side:
             return False
         else:
-            side.session_id = sid
-            side.save()
-            game = side.game
+            session = Session.create(id=sid, game=side.game, side=side)
     else:
         game = GameTimer.get_timer(timer_id)
         if not game:
             return False
-        game.observers += 1
-        game.save()
+        session = Session.create(id=sid, game=game)
     app.enter_room(sid, 't-' + str(timer_id))
-    await send_state(game)
+    await send_state(session.game)
     return True
 
 
-@app.event
-async def disconnect(sid: str):
+@register_event
+async def disconnect(session: Session):
     """Handle a client disconnecting."""
-    side = GameSide.get_or_none(GameSide.session_id == sid)
-    if side:
-        side.session_id = None
-        side.save()
-        game = side.game
-    else:
-        rooms = app.manager.get_rooms(sid, '/')
-        for room in rooms:
-            try:
-                game_id = int(room[2:])
-            except ValueError:
-                continue
-            game = GameTimer.get_by_id(game_id)
-            game.observers -= 1
-            game.save()
-            break
+    game = session.game
+    session.delete_instance()
     await send_state(game)
 
 
-@app.event
-async def start_timer(sid: str):
+@register_event
+async def start_timer(session: Session):
     """Start an unstarted timer."""
-    side = await get_game_side(sid)
-    if not side:
-        return
-    if side.game.started_at:
-        await send_error('Game already started.', sid)
-        return
-    if side.game.home_id != side.id:
-        await send_error('Only host can start game.', sid)
-        return
-    if not side.game.away:
-        await send_error('Away side has not joined yet.', sid)
-        return
-    side.game.start()
-    await send_state(side.game)
+    assert_manager_or(
+        session, session.side_id == session.game.home_id, 'player 1',
+    )
+    assert_(not session.game.started_at, 'Game already started.')
+    assert_(session.game.away, 'Away side has not joined yet.')
+    session.game.start()
+    await send_state(session.game)
 
 
-@app.event
-async def end_turn(sid: str):
+@register_event
+async def end_turn(session: Session):
     """End the client's turn."""
-    side = await get_game_side(sid)
-    if not side:
-        return
-    if not side.is_turn:
-        await send_error('Not currently your turn.', sid)
-        return
+    assert_manager_or(
+        session, session.side and session.side.is_turn,
+        'the currently playing player',
+    )
+    session.game.get_current_side().end_turn()
+    await send_state(session.game)
+
+
+async def on_timeout(session: Session):
+    """Check the client's opponent's time."""
+    assert_(
+        session.game.started_at and not session.game.has_ended,
+        'Game is not ongoing.',
+    )
+    side = session.game.get_current_side()
+    assert_(not side.is_timed_out, 'Player is not timed out.')
     side.end_turn()
     await send_state(side.game)
 
 
-@app.event
-async def opponent_timed_out(sid: str):
+@register_event
+async def timeout(session: Session):
     """Check the client's opponent's time."""
-    side = await get_game_side(sid)
-    if not side:
-        return
-    if (not side.game.started_at) or side.game.has_ended:
-        await send_error('Game is not ongoing.', sid)
-        return
-    if side.opponent.is_timed_out:
-        await send_error('Opponent is not timed out.', sid)
-        return
-    side.opponent.end_turn()
-    await send_state(side.game)
+    await on_timeout(session)
 
 
-@app.event
-async def end_game(sid: str):
+@register_event
+async def opponent_timed_out(session: Session):
+    """Alias of `timeout` for backwards compatibility."""
+    await on_timeout(session)
+
+
+@register_event
+async def end_game(session: Session):
     """Check the client's opponent's time."""
-    timer = GameTimer.get_or_none(GameTimer.manager_session_id == sid)
-    if timer:
+    if session.is_manager:
         reporting_side = None
     else:
-        reporting_side = GameSide.get_or_none(GameSide.session_id == sid)
-        if not reporting_side:
-            await send_error('This event cannot be sent by an observer.', sid)
-            return
-        timer = reporting_side.game
-    current_side = timer.get_current_side()
-    if not current_side:
-        await send_error('Game is not ongoing.', sid)
-        return
+        reporting_side = session.side
+        assert_(reporting_side, 'This event cannot be sent by an observer.')
+    current_side = session.game.get_current_side()
+    assert_(current_side, 'Game is not ongoing.')
     current_side.end_turn()
-    if reporting_side == timer.home:
-        timer.end_reporter = 0
-    elif reporting_side == timer.away:
-        timer.end_reporter = 1
+    if reporting_side == session.game.home:
+        session.game.end_reporter = 0
+    elif reporting_side == session.game.away:
+        session.game.end_reporter = 1
     else:
-        timer.end_reporter = -1
-    # `timer.end()` calls `timer.save()`, so we don't have to.
-    timer.end()
-    await send_state(timer)
+        session.game.end_reporter = -1
+    # `game.end()` calls `game.save()`, so we don't have to.
+    session.game.end()
+    await send_state(session.game)
 
 
-@app.event
-async def add_time(sid: str, seconds: int):
+@register_event
+async def add_time(session: Session, seconds: int):
     """Add time to both players' clocks."""
-    game = await get_game(sid)
-    if not game:
-        return
-    if (not game.started_at) or game.has_ended:
-        await send_error('Game is not ongoing.', sid)
-        return
-    if not isinstance(seconds, int):
-        await send_error('Seconds to add should be an int.', sid)
-        return
+    assert_(session.is_manager, 'Only a manager can send this event.')
+    assert_(session.game.ongoing, 'Game is not ongoing.')
+    assert_(isinstance(seconds, int), 'Seconds to add should be an int.')
     time = timedelta(seconds=seconds)
-    game.home.total_time += time
-    game.away.total_time += time
-    game.home.save()
-    game.away.save()
-    await send_state(game)
+    session.game.home.total_time += time
+    session.game.away.total_time += time
+    session.game.home.save()
+    session.game.away.save()
+    await send_state(session.game)
