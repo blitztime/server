@@ -4,35 +4,42 @@ Socket.IO Events
 
 Connections to the Socket.IO socket can be made at the base URL. The ``Blitztime-Timer`` must be set to the ID of the timer you wish to connect to. Unless you are joining as an observer, you must also set the ``Authorization`` header to the token you've receieved (see HTTP endpoints).
 
-Observers may not send any events.
-
 Client-sent events
 ==================
 
 ``start_timer``
 ---------------
 
-Start a timer that has not yet started. This can only be sent by the host, once the away side has joined. No data should be included.
+Start a timer that has not yet started. This can only be sent once the away side has joined. No data should be included.
+
+If this is a managed game, only the manager can send this. Otherwise, only the home player can.
 
 ``end_turn``
 ------------
 
-End the turn of the connected client. This may only be sent when it is the client's turn. No data should be included. This can only be sent using a player token.
+End the turn of the side who's turn it currently is. No data should be included.
 
-``opponent_timed_out``
-----------------------
+If this is a managed game, only the manager can send this. Otherwise, only the player who's turn it currently is can.
 
-Should be sent by one client when that client's opponent has timed out. This will instruct the server to re-check the game, and end the game if necessary. If a client notices that it itself has timed out, it should instead use ``end_turn``. No data should be included. This can only be sent using a player token.
+``timeout``
+-----------
+
+Instruct the server to re-check the game, and end the game if necessary.  No data should be included. This can be sent by any client, even an observer.
+
+This is aliased to ``opponent_timed_out`` for backwards compatibility, but this is deprecated.
 
 ``add_time``
 ------------
 
-Add time to both the home and away timers. Time should be given in seconds as the event data, an integer. This can only be sent using a manager token.
+Add time to both the home and away timers. Time should be given in seconds as the event data, an integer. This can only be sent by a manager. If the game is not managed, this event cannot be sent.
 
 ``end_game``
 ------------
 
-End the game before the timer has run out (eg. defeat, resignation). This can be sent using a manager or player token.
+End the game before the timer has run out (eg. defeat, resignation).
+
+If this is a managed game, only the manager can send this. Otherwise, only a player can.
+
 
 Server-sent events
 ==================

@@ -21,6 +21,7 @@ Fields:
 - ``away``: ``TimerSide`` (see below) or ``null``
 - ``settings``: ``array`` of ``StageSettings`` (see below)
 - ``observers``: ``int``
+- ``managed``: ``boolean``
 
 ``TimerSide``
 =============

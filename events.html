@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Socket.IO Events &mdash; Blitztime API Server 0.3.0 documentation</title>
+  <title>Socket.IO Events &mdash; Blitztime API Server 0.4.0 documentation</title>
   
 
   
@@ -90,7 +90,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#client-sent-events">Client-sent events</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#start-timer"><code class="docutils literal notranslate"><span class="pre">start_timer</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#end-turn"><code class="docutils literal notranslate"><span class="pre">end_turn</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#opponent-timed-out"><code class="docutils literal notranslate"><span class="pre">opponent_timed_out</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#timeout"><code class="docutils literal notranslate"><span class="pre">timeout</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#add-time"><code class="docutils literal notranslate"><span class="pre">add_time</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#end-game"><code class="docutils literal notranslate"><span class="pre">end_game</span></code></a></li>
 </ul>
@@ -174,28 +174,31 @@
   <div class="section" id="socket-io-events">
 <h1>Socket.IO Events<a class="headerlink" href="#socket-io-events" title="Permalink to this headline">¶</a></h1>
 <p>Connections to the Socket.IO socket can be made at the base URL. The <code class="docutils literal notranslate"><span class="pre">Blitztime-Timer</span></code> must be set to the ID of the timer you wish to connect to. Unless you are joining as an observer, you must also set the <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header to the token you’ve receieved (see HTTP endpoints).</p>
-<p>Observers may not send any events.</p>
 <div class="section" id="client-sent-events">
 <h2>Client-sent events<a class="headerlink" href="#client-sent-events" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="start-timer">
 <h3><code class="docutils literal notranslate"><span class="pre">start_timer</span></code><a class="headerlink" href="#start-timer" title="Permalink to this headline">¶</a></h3>
-<p>Start a timer that has not yet started. This can only be sent by the host, once the away side has joined. No data should be included.</p>
+<p>Start a timer that has not yet started. This can only be sent once the away side has joined. No data should be included.</p>
+<p>If this is a managed game, only the manager can send this. Otherwise, only the home player can.</p>
 </div>
 <div class="section" id="end-turn">
 <h3><code class="docutils literal notranslate"><span class="pre">end_turn</span></code><a class="headerlink" href="#end-turn" title="Permalink to this headline">¶</a></h3>
-<p>End the turn of the connected client. This may only be sent when it is the client’s turn. No data should be included. This can only be sent using a player token.</p>
+<p>End the turn of the side who’s turn it currently is. No data should be included.</p>
+<p>If this is a managed game, only the manager can send this. Otherwise, only the player who’s turn it currently is can.</p>
 </div>
-<div class="section" id="opponent-timed-out">
-<h3><code class="docutils literal notranslate"><span class="pre">opponent_timed_out</span></code><a class="headerlink" href="#opponent-timed-out" title="Permalink to this headline">¶</a></h3>
-<p>Should be sent by one client when that client’s opponent has timed out. This will instruct the server to re-check the game, and end the game if necessary. If a client notices that it itself has timed out, it should instead use <code class="docutils literal notranslate"><span class="pre">end_turn</span></code>. No data should be included. This can only be sent using a player token.</p>
+<div class="section" id="timeout">
+<h3><code class="docutils literal notranslate"><span class="pre">timeout</span></code><a class="headerlink" href="#timeout" title="Permalink to this headline">¶</a></h3>
+<p>Instruct the server to re-check the game, and end the game if necessary.  No data should be included. This can be sent by any client, even an observer.</p>
+<p>This is aliased to <code class="docutils literal notranslate"><span class="pre">opponent_timed_out</span></code> for backwards compatibility, but this is deprecated.</p>
 </div>
 <div class="section" id="add-time">
 <h3><code class="docutils literal notranslate"><span class="pre">add_time</span></code><a class="headerlink" href="#add-time" title="Permalink to this headline">¶</a></h3>
-<p>Add time to both the home and away timers. Time should be given in seconds as the event data, an integer. This can only be sent using a manager token.</p>
+<p>Add time to both the home and away timers. Time should be given in seconds as the event data, an integer. This can only be sent by a manager. If the game is not managed, this event cannot be sent.</p>
 </div>
 <div class="section" id="end-game">
 <h3><code class="docutils literal notranslate"><span class="pre">end_game</span></code><a class="headerlink" href="#end-game" title="Permalink to this headline">¶</a></h3>
-<p>End the game before the timer has run out (eg. defeat, resignation). This can be sent using a manager or player token.</p>
+<p>End the game before the timer has run out (eg. defeat, resignation).</p>
+<p>If this is a managed game, only the manager can send this. Otherwise, only a player can.</p>
 </div>
 </div>
 <div class="section" id="server-sent-events">
