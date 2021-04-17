@@ -97,7 +97,7 @@ async def create_timer(request: Request) -> HTTPResponse:
     if options.stages[0].start_turn != 0:
         raise ApiError(422, 'First stage must start on turn 0.')
     if options.as_manager:
-        timer = GameTimer.create(settings=options.stages)
+        timer = GameTimer.create(managed=True, settings=options.stages)
         token = timer.manager_token
     else:
         side = GameSide.create()
