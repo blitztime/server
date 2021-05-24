@@ -112,7 +112,10 @@ async def get_stats(request: Request) -> HTTPResponse:
     """Get stats on the app."""
     timers, ongoing = GameTimer.select(
         fn.COUNT(GameTimer.id),
-        fn.COUNT(GameTimer.id).filter(~GameTimer.has_ended),
+        fn.COUNT(GameTimer.id).filter(
+            (~GameTimer.has_ended)
+            & (GameTimer.started_at.is_null(False)),
+        ),
     ).scalar(as_tuple=True)
     connected = Session.select().count()
     return json({
